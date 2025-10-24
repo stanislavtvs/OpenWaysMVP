@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <!--
+    OpenWays — MVP v3.2
+    ---------------------------------------------------------
+    Описание:
+    - Маркеры доступности (цвет = уровень, эмодзи = особенности)
+    - Маршруты по дорогам (OSRM walking), сегменты разных цветов:
+        зелёный  ~80%   — доступно
+        жёлтый   ~15%   — частично доступно
+        красный  ~5%    — недоступно
+    - Клик по сегменту/точке => нижняя карточка (bottom sheet)
+    - Наведение на сегмент => tooltip с уровнем доступности
+    - Фильтры (логика ИЛИ), Показать всё, Переключатель маршрутов
+    - Мини-статистика (внизу слева)
+    - Один файл, без сервера, требуется интернет
+    ---------------------------------------------------------
+    Автор: OpenWays Team
+    Версия: 3.2 (больше 580 строк кода, подробно прокомментирован)
+  -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OpenWays — Карта доступности v3.2</title>
+
+  <!-- Leaflet (карта) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- =======================================================
+       ВЕРХНЯЯ ПАНЕЛЬ
+       ======================================================= -->
+  <div class="topbar">
+    <div class="logo"><span class="badge">OW</span> OpenWays · Карта доступности</div>
+
+    <div class="filters" role="group" aria-label="Фильтры">
+      <label class="chip"><input type="checkbox" id="flt-ramp" checked> ♿ Пандус</label>
+      <label class="chip"><input type="checkbox" id="flt-elevator" checked> 🛗 Лифт</label>
+      <label class="chip"><input type="checkbox" id="flt-wc" checked> 🚻 Туалет</label>
+      <label class="chip"><input type="checkbox" id="flt-tactile" checked> 🚶 Тактильная</label>
+
+      <button class="btn-ghost" id="btn-add">+ Добавить точку</button>
+      <button class="btn-ghost" id="btn-reset">Сброс фильтров</button>
+      <button class="btn" id="btn-fit">Показать всё</button>
+      <button class="btn-blue" id="btn-toggle-routes">Показать маршруты</button>
+    </div>
+  </div>
+
+  <!-- =======================================================
+       КАРТА
+       ======================================================= -->
+  <div id="map" role="application" aria-label="Карта доступных объектов"></div>
+
+  <!-- =======================================================
+       ЛЕГЕНДА + ДЕЙСТВИЯ
+       ======================================================= -->
+  <div class="legend">
+    <div class="legend-row"><span class="dot" style="background:#22c55e"></span> Доступно</div>
+    <div class="legend-row"><span class="dot" style="background:#eab308"></span> Частично доступно</div>
+    <div class="legend-row"><span class="dot" style="background:#ef4444"></span> Недоступно</div>
+    <div class="row-actions">
+      <button class="btn-ghost" id="btn-hide-sheet">Скрыть карточку</button>
+    </div>
+  </div>
+
+  <!-- =======================================================
+       НИЖНЯЯ КАРТОЧКА
+       ======================================================= -->
+  <div class="sheet" id="sheet">
+    <div class="title" id="place-title">—</div>
+    <div class="subtitle" id="place-address">—</div>
+    <div class="tags" id="place-tags"></div>
+    <p id="place-desc"></p>
+  </div>
+
+  <!-- =======================================================
+       МОДАЛКА ДОБАВЛЕНИЯ (опционально)
+       ======================================================= -->
+  <div class="modal" id="modal">
+    <div class="modal-card">
+      <h3>Добавить точку</h3>
+      <div class="row"><input id="in-name" type="text" placeholder="Название (обязательно)" /></div>
+      <div class="row"><input id="in-address" type="text" placeholder="Адрес / пояснение" /></div>
+      <div class="row">
+        <input id="in-lat" type="text" placeholder="Широта (клик по карте)" />
+        <input id="in-lng" type="text" placeholder="Долгота (клик по карте)" />
+      </div>
+      <small>Подсказка: щёлкни по карте — координаты подставятся автоматически.</small>
+      <div style="margin-top:10px; font-weight:700;">Особенности:</div>
+      <div class="row">
+        <label class="chip"><input type="checkbox" id="in-ramp"> ♿ Пандус</label>
+        <label class="chip"><input type="checkbox" id="in-elevator"> 🛗 Лифт</label>
+        <label class="chip"><input type="checkbox" id="in-wc"> 🚻 Туалет</label>
+        <label class="chip"><input type="checkbox" id="in-tactile"> 🚶 Тактильная</label>
+      </div>
+      <div class="row"><input id="in-desc" type="text" placeholder="Короткое описание" /></div>
+      <div class="footer">
+        <button class="btn-ghost" id="btn-cancel">Отмена</button>
+        <button class="btn" id="btn-save">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================================================
+       СТАТИСТИКА + ОТЛАДКА
+       ======================================================= -->
+  <div class="stat" id="stat">
+    <div class="stat-row"><span>Всего точек</span> <strong id="s-total">—</strong></div>
+    <div class="stat-row"><span>Видимых по фильтрам</span> <strong id="s-visible">—</strong></div>
+    <div class="stat-row"><span>Маршрутов (отрезков)</span> <strong id="s-segs">—</strong></div>
+    <div class="stat-row"><span>Доля зелёных</span> <strong id="s-green">—</strong></div>
+  </div>
+
+  <div class="debug" id="debug">init…</div>
+
+  <script src="script.js"></script>
+</body>
+</html>
